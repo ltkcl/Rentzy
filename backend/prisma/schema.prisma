@@ -1,0 +1,67 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String     @id @unique
+  name          String
+  email         String
+  createdAt     DateTime
+  products      Products[] @relation(name: "user")
+  rentsCustomer Rent[]     @relation(name: "customer")
+  rentsVendor   Rent[]     @relation(name: "vendor")
+  customer      purchase[] @relation(name: "customer")
+  vendor        purchase[] @relation(name: "vendor")
+}
+
+model Products {
+  User          User       @relation(name: "user", fields: [userId], references: [id])
+  userId        String
+  prodId        String     @id @default(uuid())
+  prodName      String
+  purchasePrice Int
+  rentPrice     Int
+  prodType      String
+  stock         Int
+  isAvailable   Boolean
+  condition     String
+  createdAt     DateTime   
+  rents         Rent[]     @relation(name: "product")
+  purchases     purchase[] @relation(name: "purchase")
+}
+
+model Rent {
+  rentid     String   @id @default(cuid())
+  products   Products @relation(name: "product", fields: [prodId], references: [prodId])
+  prodId     String
+  customer   User     @relation(name: "customer", fields: [customerId], references: [id])
+  customerId String
+  vendor     User     @relation(name: "vendor", fields: [vendorId], references: [id])
+  vendorId   String
+  dateFrom   DateTime
+  dateTo     DateTime
+  IsRented   Boolean
+  IsReturned Boolean
+}
+
+model purchase {
+  purchaseId String   @id @default(cuid())
+  products   Products @relation(name: "purchase", fields: [prodId], references: [prodId])
+  prodId     String
+  customer   User     @relation(name: "customer", fields: [customerId], references: [id])
+  customerId String
+  vendor     User     @relation(name: "vendor", fields: [vendorId], references: [id])
+  vendorId   String
+  IsSold     Boolean  @default(false)
+  date       DateTime @default(now())
+}
