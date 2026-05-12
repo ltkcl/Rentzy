@@ -1,5 +1,0 @@
-const upiId = 'megahertzrobotics@ybl'; const upiLink = `upi://pay?pa=${upiId}&pn=MegahertzRobotics&am=${total}&cu=INR`; const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(upiLink)}&size=300`;
-
-
-
-https://github.com/sonroy-glitch/mega_BE/blob/main/src/index.ts
