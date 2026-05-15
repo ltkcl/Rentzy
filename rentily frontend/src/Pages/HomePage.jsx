@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { products } from "../data/products";
-import { useNavigate } from "react-router-dom";
+import { Link, useLoaderData, useNavigate } from "react-router-dom";
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { products } = useLoaderData();
   const categories = [
     { id: "textbooks", name: "Textbooks", icon: "📘" },
     { id: "furniture", name: "Furniture", icon: "🛋️" },
@@ -298,7 +297,7 @@ export default function HomePage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent z-10"></div>
 
                     <img
-                      src={item.image}
+                      src={item.image || "/vite.svg"}
                       alt={item.title}
                       className="w-full h-full object-cover bg-slate-200 group-hover:scale-105 transition-transform duration-700"
                     />

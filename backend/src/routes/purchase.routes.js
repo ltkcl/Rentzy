@@ -1,6 +1,6 @@
 import { Router } from "express";
 import express from "express";
-import { createPurchase } from "../controllers/purchase.controller";
+import { createPurchase } from "../controllers/purchase.controller.js";
 const purchaseRouter = Router() ;
 
 

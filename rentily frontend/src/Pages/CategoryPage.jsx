@@ -1,9 +1,8 @@
-import { useParams, Link } from "react-router-dom";
-import { products } from "../data/products";
+import { Link, useLoaderData, useParams } from "react-router-dom";
 
 export default function CategoryPage() {
   const { categoryId } = useParams();
-
+  const { products } = useLoaderData();
   const filteredItems = products.filter(
     (item) => item.category?.toLowerCase() === categoryId?.toLowerCase(),
   );

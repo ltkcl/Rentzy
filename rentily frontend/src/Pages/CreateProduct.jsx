@@ -1,41 +1,46 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Form, useActionData, useLoaderData, useNavigation, useParams } from "react-router-dom";
+import { useUser } from "@clerk/clerk-react";
 import Navbar from "../components/Navbar";
 import { CATEGORIES } from "../data/products";
 
 export default function CreateProduct() {
-  const navigate = useNavigate();
-  const [submitting,    setSubmitting]    = useState(false);
-  const [submitError,   setSubmitError]   = useState(null);
-  const [imageFile,     setImageFile]     = useState(null);
+  const { user } = useUser();
+  const actionData = useActionData();
+  const loaderData = useLoaderData();
+  const navigation = useNavigation();
+  const { productId } = useParams();
+  const submitting = navigation.state === "submitting";
+  const existingProduct = loaderData?.product ?? null;
+  const isEditMode = Boolean(productId && existingProduct);
   const [imagePreview,  setImagePreview]  = useState(null);
+  const showingCurrentImage = isEditMode && existingProduct?.image && !imagePreview;
   const [isDragging,    setIsDragging]    = useState(false);
+  const [listingType,   setListingType]   = useState(existingProduct?.type ?? "rent");
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     return () => { if (imagePreview) URL.revokeObjectURL(imagePreview); };
   }, [imagePreview]);
 
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    category: "",
-    price: "",
-    rentPrice: "",
-    condition: "",
-    location: "",
-    type: "rent",
-  });
+  useEffect(() => {
+    setListingType(existingProduct?.type ?? "rent");
+  }, [existingProduct?.type]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setListingType(e.target.value);
   };
 
   const applyFile = (file) => {
     if (!file || !file.type.startsWith("image/")) return;
+
+    if (fileInputRef.current) {
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      fileInputRef.current.files = dataTransfer.files;
+    }
+
     if (imagePreview) URL.revokeObjectURL(imagePreview);
-    setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
   };
 
@@ -48,59 +53,8 @@ export default function CreateProduct() {
   const removeImage = (e) => {
     e.stopPropagation();
     if (imagePreview) URL.revokeObjectURL(imagePreview);
-    setImageFile(null);
     setImagePreview(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!imageFile) {
-      setSubmitError("Please upload a product photo.");
-      return;
-    }
-    setSubmitError(null);
-    setSubmitting(true);
-
-    const imageUrl = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => resolve(ev.target.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(imageFile);
-    });
-
-    const buyPrice  = formData.type !== "rent" ? parseInt(formData.price)     || 0 : null;
-    const rentPrice = formData.type !== "sell" ? parseInt(formData.rentPrice) || 0 : null;
-
-    const newProduct = {
-      id:          Date.now(),
-      title:       formData.title,
-      category:    formData.category,
-      condition:   formData.condition,
-      description: formData.description || "",
-      location:    formData.location    || "",
-      image:       imageUrl,
-      buyPrice,
-      rentPrice,
-      price:       buyPrice ?? rentPrice,
-      rentable:    formData.type !== "sell",
-      forSale:     formData.type !== "rent",
-      type:        formData.type,
-      available:   true,
-      seller:      "You",
-    };
-
-    try {
-      const stored  = localStorage.getItem("rentily_products");
-      const existing = stored ? JSON.parse(stored) : [];
-      localStorage.setItem("rentily_products", JSON.stringify([...existing, newProduct]));
-      alert("Product listed successfully!");
-      navigate("/browse");
-    } catch {
-      setSubmitError("Failed to save product. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
   };
 
   return (
@@ -146,12 +100,16 @@ export default function CreateProduct() {
           <div className="create-form-header">
             <div className="create-form-header-icon">📋</div>
             <div>
-              <h1>Post a Listing</h1>
-              <p>Fill in the details below to list your item for rent or sale.</p>
+              <h1>{isEditMode ? "Edit Listing" : "Post a Listing"}</h1>
+              <p>
+                {isEditMode
+                  ? "Update your product details and save the changes."
+                  : "Fill in the details below to list your item for rent or sale."}
+              </p>
             </div>
           </div>
 
-          {submitError && (
+          {actionData?.error && (
             <div
               style={{
                 background: "#fee2e2",
@@ -163,14 +121,24 @@ export default function CreateProduct() {
                 fontSize: 14,
               }}
             >
-              ⚠️ {submitError}
+              ⚠️ {actionData.error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="create-form-body">
+          <Form method="post" encType="multipart/form-data" className="create-form-body">
+            <input
+              ref={fileInputRef}
+              type="file"
+              name="image"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={(e) => applyFile(e.target.files[0])}
+            />
 
             {/* Basic Info */}
             <div className="form-section-label"><span>📝</span> Basic Info</div>
+
+            <input type="hidden" name="userId" value={user?.id || existingProduct?.userId || ""} />
 
             <div className="form-group">
               <label className="form-label">Product Title *</label>
@@ -179,8 +147,7 @@ export default function CreateProduct() {
                 name="title"
                 className="form-input"
                 placeholder="e.g. MacBook Pro 2021, Calculus Textbook…"
-                value={formData.title}
-                onChange={handleChange}
+                defaultValue={existingProduct?.title ?? ""}
                 required
               />
             </div>
@@ -191,8 +158,7 @@ export default function CreateProduct() {
                 name="description"
                 className="form-textarea"
                 placeholder="Describe your item — condition, accessories included, reason for selling…"
-                value={formData.description}
-                onChange={handleChange}
+                defaultValue={existingProduct?.description ?? ""}
               />
             </div>
 
@@ -202,8 +168,7 @@ export default function CreateProduct() {
                 <select
                   name="category"
                   className="form-select"
-                  value={formData.category}
-                  onChange={handleChange}
+                  defaultValue={existingProduct?.category ?? ""}
                   required
                 >
                   <option value="">Select Category</option>
@@ -220,8 +185,7 @@ export default function CreateProduct() {
                 <select
                   name="condition"
                   className="form-select"
-                  value={formData.condition}
-                  onChange={handleChange}
+                  defaultValue={existingProduct?.condition ?? ""}
                   required
                 >
                   <option value="">Select Condition</option>
@@ -239,34 +203,45 @@ export default function CreateProduct() {
             <div className="form-grid-2">
               <div className="form-group">
                 <label className="form-label">
-                  Buy Price (₹) {formData.type === "rent" ? "" : "*"}
+                  Buy Price (₹) {listingType === "rent" ? "" : "*"}
                 </label>
                 <input
                   type="number"
                   name="price"
                   className="form-input"
                   placeholder="e.g. 12000"
-                  value={formData.price}
-                  onChange={handleChange}
+                  defaultValue={existingProduct?.buyPrice ?? ""}
                   min="0"
-                  required={formData.type !== "rent"}
+                  required={listingType !== "rent"}
                 />
               </div>
               <div className="form-group">
                 <label className="form-label">
-                  Rent Price / Month (₹) {formData.type === "sell" ? "" : "*"}
+                  Rent Price / Month (₹) {listingType === "sell" ? "" : "*"}
                 </label>
                 <input
                   type="number"
                   name="rentPrice"
                   className="form-input"
                   placeholder="e.g. 150"
-                  value={formData.rentPrice}
-                  onChange={handleChange}
+                  defaultValue={existingProduct?.rentPrice ?? ""}
                   min="0"
-                  required={formData.type !== "sell"}
+                  required={listingType !== "sell"}
                 />
               </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Stock *</label>
+              <input
+                type="number"
+                name="stock"
+                className="form-input"
+                placeholder="e.g. 1"
+                defaultValue={existingProduct?.stock ?? "1"}
+                min="1"
+                required
+              />
             </div>
 
             {/* Location */}
@@ -279,8 +254,7 @@ export default function CreateProduct() {
                 name="location"
                 className="form-input"
                 placeholder="e.g. Bhubaneswar, Kota, Delhi…"
-                value={formData.location}
-                onChange={handleChange}
+                defaultValue={existingProduct?.location ?? ""}
               />
             </div>
 
@@ -298,7 +272,7 @@ export default function CreateProduct() {
                     type="radio"
                     name="type"
                     value={opt.value}
-                    checked={formData.type === opt.value}
+                    checked={listingType === opt.value}
                     onChange={handleChange}
                   />
                   <div className="type-card-emoji">{opt.emoji}</div>
@@ -309,6 +283,19 @@ export default function CreateProduct() {
 
             {/* Photo upload */}
             <div className="form-section-label"><span>📸</span> Photo *</div>
+
+            {showingCurrentImage && (
+              <div className="upload-preview">
+                <img src={existingProduct.image} alt="Current product" className="upload-preview-img" />
+                <button
+                  type="button"
+                  className="upload-preview-change"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  Change photo
+                </button>
+              </div>
+            )}
 
             {imagePreview ? (
               <div className="upload-preview">
@@ -321,15 +308,8 @@ export default function CreateProduct() {
                 >
                   Change photo
                 </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={(e) => applyFile(e.target.files[0])}
-                />
               </div>
-            ) : (
+            ) : !showingCurrentImage ? (
               <div
                 className={`form-upload-zone${isDragging ? " drag-active" : ""}`}
                 onClick={() => fileInputRef.current?.click()}
@@ -337,31 +317,25 @@ export default function CreateProduct() {
                 onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                 onDragLeave={() => setIsDragging(false)}
               >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => applyFile(e.target.files[0])}
-                  style={{ display: "none" }}
-                />
                 <div className="upload-icon">{isDragging ? "📂" : "📷"}</div>
                 <p className="upload-text-main">
                   {isDragging ? "Drop your photo here" : "Drag & drop or click to browse"}
                 </p>
                 <p className="upload-text-sub">PNG, JPG, WEBP — max 10 MB</p>
               </div>
-            )}
-
+            ) : null}
             <button
               type="submit"
               className="form-submit-btn"
               disabled={submitting}
               style={{ opacity: submitting ? 0.7 : 1 }}
             >
-              {submitting ? "⏳ Posting…" : "🚀  Post Listing Now"}
+              {submitting
+                ? isEditMode ? "⏳ Saving…" : "⏳ Posting…"
+                : isEditMode ? "💾 Save Changes" : "🚀  Post Listing Now"}
             </button>
 
-          </form>
+          </Form>
         </div>
       </div>
     </div>

@@ -1,15 +1,12 @@
 import { Router } from "express";
-// import registerUser from "../controllers/user.controller.js";
-import POST from "../controllers/webhook.controller.js";
-import express from "express";
 import productRouter from "./products.routes.js";
-import purchaseRouter from "./rent.routes.js";
-import app from "../app.js"; 
+import purchaseRouter from "./purchase.routes.js";
 import rentRouter from "./rent.routes.js";
-const router = Router() ;
 
-// to sign-up a user
-router.use("/webhook",express.raw({ type: "application/json" }),POST);
-router.use("/user", express.json(), productRouter,purchaseRouter,rentRouter);
+const router = Router();
+
+// Routes for user-related actions (products, purchases, rents)
+// Mounted under /api/v1/user in app.js if desired, or /api/v1 directly
+router.use("/user", productRouter, purchaseRouter, rentRouter);
 
 export default router;

@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/clerk-react";
 
 const Navbar = () => {
   const location = useLocation();
@@ -17,12 +18,20 @@ const Navbar = () => {
           <Link to="/browse" className={`nav-link ${isActive('/browse') ? 'active' : ''}`}>
             Browse
           </Link>
-          <Link to="/sell" className={`nav-link ${isActive('/sell') ? 'active' : ''}`}>
-            My Listings
-          </Link>
-          <button className="nav-btn" onClick={() => navigate('/sell/create-product')}>
-            + Post Listing
-          </button>
+          <SignedIn>
+            <Link to="/sell" className={`nav-link ${isActive('/sell') ? 'active' : ''}`}>
+              My Listings
+            </Link>
+            <button className="nav-btn" onClick={() => navigate('/sell/create-product')}>
+              + Post Listing
+            </button>
+            <UserButton afterSignOutUrl="/" />
+          </SignedIn>
+          <SignedOut>
+            <SignInButton mode="modal">
+              <button className="nav-link auth-btn">Sign In</button>
+            </SignInButton>
+          </SignedOut>
         </div>
       </div>
     </nav>

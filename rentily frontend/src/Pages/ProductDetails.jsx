@@ -1,47 +1,10 @@
-import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { api, mapProduct } from "../services/api";
-import { products as localProducts } from "../data/products";
+import { useLoaderData, useNavigate } from "react-router-dom";
 
 export default function ProductDetails() {
-  const { productId } = useParams();
   const navigate = useNavigate();
+  const { product } = useLoaderData();
 
-  const [product, setProduct]   = useState(null);
-  const [loading, setLoading]   = useState(true);
-  const [error,   setError]     = useState(null);
-
-  useEffect(() => {
-    // Try fetching from the backend first
-    api
-      .getProduct(productId)
-      .then((res) => {
-        setProduct(mapProduct(res.data));
-        setError(null);
-      })
-      .catch(() => {
-        // Fall back to local dummy data (IDs are numbers as strings in URLs)
-        const local = localProducts.find(
-          (p) => String(p.id) === String(productId)
-        );
-        if (local) {
-          setProduct(local);
-        } else {
-          setError("Product not found");
-        }
-      })
-      .finally(() => setLoading(false));
-  }, [productId]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-blue-50">
-        <p className="text-xl font-semibold text-gray-500">Loading product…</p>
-      </div>
-    );
-  }
-
-  if (error || !product) {
+  if (!product) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-blue-50 gap-4">
         <p className="text-xl font-semibold text-gray-500">Product not found</p>

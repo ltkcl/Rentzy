@@ -9,7 +9,6 @@ import { useAuth } from "@clerk/react";
 import { useEffect } from "react";
 
 
-
 const router = createBrowserRouter([{
   path:"/sign-up",
   Component: Sign_up
@@ -27,10 +26,10 @@ const router = createBrowserRouter([{
         const productsUnderCategory = await axios.get("http://localhost:3000/api/v1/user/category");
         if(productsUnderCategory.status>=400){
           console.error("Unable to retrieve the product .");
-        }
+        }       
         return {
           products : products.data,
-          category : productsUnderCategory.data
+          category : productsUnderCategory.data,
         };
       }catch(err){
         console.error("Error while fetching home products : "+err); 

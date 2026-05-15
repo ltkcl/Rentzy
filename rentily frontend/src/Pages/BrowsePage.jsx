@@ -1,9 +1,9 @@
 import { useState, useMemo } from "react";
+import { useLoaderData } from "react-router-dom";
 import SearchBar from "../components/SearchBar";
 import CategoryFilter from "../components/CategoryFilter";
 import ProductCard from "../components/ProductCard";
 import Navbar from "../components/Navbar";
-import { DUMMY_PRODUCTS } from "../data/products";
 
 const TYPE_OPTIONS = [
   { value: "all",  label: "All" },
@@ -20,19 +20,11 @@ const SORT_OPTIONS = [
 ];
 
 const BrowsePage = () => {
+  const { products } = useLoaderData();
   const [search,     setSearch]     = useState("");
   const [category,   setCategory]   = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [sortBy,     setSortBy]     = useState("default");
-  const [products] = useState(() => {
-    try {
-      const stored = localStorage.getItem("rentily_products");
-      const local = stored ? JSON.parse(stored) : [];
-      return [...DUMMY_PRODUCTS, ...local];
-    } catch {
-      return DUMMY_PRODUCTS;
-    }
-  });
   const loading = false;
 
   // Derive the listing type from whichever fields a product has (supports both API and dummy data)

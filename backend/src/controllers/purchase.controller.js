@@ -8,13 +8,13 @@ import ApiResponse from "../utils/ApiResponse.js";
 const createPurchase = asyncHandler(async (req,res)=>{
     const {purchaseId , prodId , customerId , vendorId , Usedstock} = req.body;
     try {
-        if(!prodId || !customerId || !vendorId || !purchaseId || !stock ){
+        if(!prodId || !customerId || !vendorId || !purchaseId || !Usedstock ){
             throw new ApiError(400,"Please enter all the fields");
         }
         // To make purchase only when the product is available
-        const condition = await prisma.products.findFirst({
+        const condition = await prisma.products.findUnique({
                 where:{
-                    userId : vendorId
+                    prodId : prodId
                 },
                 select :{
                     stock : true,
@@ -36,7 +36,7 @@ const createPurchase = asyncHandler(async (req,res)=>{
                 IsSold : true
                 }
             })
-            if(!createPurchase){
+            if(!getPurchase){
                 throw new ApiError(500,"Unable to create a purchase");
                 }
             // To update the stock value
@@ -44,18 +44,18 @@ const createPurchase = asyncHandler(async (req,res)=>{
             const available = (availableStock!=0) ? true : false;
             const updateStock = await prisma.products.update({
                 where:{
-                    userId : vendorId
+                    prodId : prodId
                 },
                 data:{
                     stock : availableStock,
                     isAvailable: available
                 }
             });    
-            return new ApiResponse(200,getPurchase,"New purchase was created")    
+            return res.status(200).json(new ApiResponse(200,getPurchase,"New purchase was created"))    
          } 
         
     } catch (error) {
-        throw new ApiError(500,"Unable to create the purchase");
+        throw new ApiError(500,"Unable to create the purchase: " + error.message);
     }
 })
 export {createPurchase}

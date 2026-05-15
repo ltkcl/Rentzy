@@ -8,7 +8,7 @@ export default defineConfig({
     // Proxy /api requests to the backend so there are no CORS issues in dev
     proxy: {
       "/api": {
-        target: "http://localhost:4242",
+        target: "http://localhost:3000",
         changeOrigin: true,
       },
     },

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 //  import { products } from "../data/products";
 import { useLoaderData } from "react-router-dom";
 import { UserButton } from "@clerk/react";
+import ProductImage from "./ProductImage";
 export default function HomePage() {
   // Category list used by the Explore Categories section.
   const categories = [
@@ -14,7 +15,6 @@ export default function HomePage() {
     { id: "kitchen", name: "Kitchen", icon: "🍴" },
   ];
   const { products, category } = useLoaderData();
-  console.log(category.data);
   const [showAllItems, setShowAllItems] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -331,11 +331,7 @@ export default function HomePage() {
                     <div className="relative aspect-square bg-slate-100 overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent z-10"></div>
 
-                      <img
-                        src={item.image}
-                        alt={item.prodName}
-                        className="w-full h-full object-cover bg-slate-200 group-hover:scale-105 transition-transform duration-700"
-                      />
+                      <ProductImage item={item} ></ProductImage>
                       {/* Condition Badge */}
                       <div className="absolute top-4 left-4 z-20">
                         <span className="bg-white/95 backdrop-blur-sm text-slate-800 text-xs font-black px-3 py-1.5 rounded-full shadow-sm">

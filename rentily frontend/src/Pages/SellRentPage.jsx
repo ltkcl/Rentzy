@@ -1,6 +1,7 @@
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useLoaderData, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { MY_LISTINGS } from '../data/products';
+import { api } from '../services/api';
  
 const TYPE_LABELS = {
   rent: { label: 'Rent Only', cls: 'tag-rent' },
@@ -11,15 +12,16 @@ const TYPE_LABELS = {
 const formatPrice = (price) =>
   new Intl.NumberFormat('en-NP', { style: 'currency', currency: 'NPR', maximumFractionDigits: 0 }).format(price);
  
-const ListingCard = ({ listing }) => {
+const ListingCard = ({ listing, onEdit, onRemove, deleting }) => {
   const typeInfo = TYPE_LABELS[listing.type] || TYPE_LABELS.both;
+  const status = listing.available ? 'Active' : 'Inactive';
  
   return (
     <div className="listing-card">
       <div className="listing-image-wrap">
-        <img src={listing.image} alt={listing.title} className="listing-image" />
-        <span className={`listing-status ${listing.status === 'Active' ? 'status-active' : 'status-inactive'}`}>
-          {listing.status}
+        <img src={listing.image || '/vite.svg'} alt={listing.title} className="listing-image" />
+        <span className={`listing-status ${status === 'Active' ? 'status-active' : 'status-inactive'}`}>
+          {status}
         </span>
       </div>
       <div className="listing-body">
@@ -33,7 +35,7 @@ const ListingCard = ({ listing }) => {
           {(listing.type === 'sell' || listing.type === 'both') && (
             <div className="listing-price-item">
               <span className="listing-price-label">Sell Price</span>
-              <span className="listing-price-val buy-price">{formatPrice(listing.price)}</span>
+              <span className="listing-price-val buy-price">{formatPrice(listing.buyPrice || 0)}</span>
             </div>
           )}
           {(listing.type === 'rent' || listing.type === 'both') && (
@@ -44,8 +46,14 @@ const ListingCard = ({ listing }) => {
           )}
         </div>
         <div className="listing-actions">
-          <button className="listing-btn edit-btn">✏️ Edit</button>
-          <button className="listing-btn delete-btn">🗑️ Remove</button>
+          <button className="listing-btn edit-btn" onClick={() => onEdit(listing.id)}>✏️ Edit</button>
+          <button
+            className="listing-btn delete-btn"
+            onClick={() => onRemove(listing.id)}
+            disabled={deleting}
+          >
+            {deleting ? 'Removing...' : '🗑️ Remove'}
+          </button>
         </div>
       </div>
     </div>
@@ -54,6 +62,32 @@ const ListingCard = ({ listing }) => {
  
 const SellRentPage = () => {
   const navigate = useNavigate();
+  const { listings } = useLoaderData();
+  const [listingItems, setListingItems] = useState(listings);
+  const [deletingId, setDeletingId] = useState(null);
+
+  useEffect(() => {
+    setListingItems(listings);
+  }, [listings]);
+
+  const handleEdit = (productId) => {
+    navigate(`/sell/edit-product/${productId}`);
+  };
+
+  const handleRemove = async (productId) => {
+    const confirmed = window.confirm('Remove this listing?');
+    if (!confirmed) return;
+
+    try {
+      setDeletingId(productId);
+      await api.deleteProduct(productId);
+      setListingItems((current) => current.filter((listing) => listing.id !== productId));
+    } catch (error) {
+      window.alert(error.message || 'Unable to remove the listing right now.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
  
   return (
     <div className="page-wrapper">
@@ -77,7 +111,8 @@ const SellRentPage = () => {
           <div className="stat-card stat-blue">
             <div className="stat-icon">📦</div>
             <div className="stat-info">
-              <span className="stat-num">{MY_LISTINGS.length}</span>
+              <span className="stat-num">{listings.length}</span>
+              
               <span className="stat-label">Active Listings</span>
             </div>
           </div>
@@ -108,17 +143,22 @@ const SellRentPage = () => {
         <div className="listings-section">
           <div className="section-header">
             <h2 className="section-title">Your Listings</h2>
-            <span className="section-badge">{MY_LISTINGS.length} items</span>
+            <span className="section-badge">{listingItems.length} items</span>
           </div>
  
-          {MY_LISTINGS.length > 0 ? (
+          {listingItems.length > 0 ? (
             <div className="listings-grid">
-              {MY_LISTINGS.map((listing, i) => (
+              {listingItems.map((listing, i) => (
                 <div
                   key={listing.id}
                   style={{ animationDelay: `${i * 0.1}s`, opacity: 0, animation: `fadeInUp 0.4s ease ${i * 0.1}s forwards` }}
                 >
-                  <ListingCard listing={listing} />
+                  <ListingCard
+                    listing={listing}
+                    onEdit={handleEdit}
+                    onRemove={handleRemove}
+                    deleting={deletingId === listing.id}
+                  />
                 </div>
               ))}
  
@@ -126,7 +166,7 @@ const SellRentPage = () => {
               <div
                 className="add-listing-card"
                 onClick={() => navigate('/sell/create-product')}
-                style={{ animationDelay: `${MY_LISTINGS.length * 0.1}s`, opacity: 0, animation: `fadeInUp 0.4s ease ${MY_LISTINGS.length * 0.1}s forwards` }}
+                style={{ animationDelay: `${listingItems.length * 0.1}s`, opacity: 0, animation: `fadeInUp 0.4s ease ${listingItems.length * 0.1}s forwards` }}
               >
                 <div className="add-listing-inner">
                   <div className="add-listing-icon">+</div>

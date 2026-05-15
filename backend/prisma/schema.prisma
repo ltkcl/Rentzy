@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
   output   = "../node_modules/.prisma/client"
@@ -15,8 +10,8 @@ datasource db {
 model User {
   id            String     @id @unique
   name          String
-  email         String
-  createdAt     DateTime
+  email         String     @unique
+  createdAt     DateTime   @default(now())
   products      Products[] @relation(name: "user")
   rentsCustomer Rent[]     @relation(name: "customer")
   rentsVendor   Rent[]     @relation(name: "vendor")
@@ -35,7 +30,7 @@ model Products {
   stock         Int
   isAvailable   Boolean
   condition     String
-  createdAt     DateTime   
+  createdAt     DateTime   @default(now())
   rents         Rent[]     @relation(name: "product")
   purchases     purchase[] @relation(name: "purchase")
 }
@@ -48,10 +43,10 @@ model Rent {
   customerId String
   vendor     User     @relation(name: "vendor", fields: [vendorId], references: [id])
   vendorId   String
-  dateFrom   DateTime
-  dateTo     DateTime
-  IsRented   Boolean
-  IsReturned Boolean
+  dateFrom   DateTime @default(now())
+  dateTo     DateTime @default(now())
+  IsRented   Boolean  @default(true)
+  IsReturned Boolean  @default(false)
 }
 
 model purchase {

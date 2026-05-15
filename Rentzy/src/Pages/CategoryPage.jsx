@@ -71,7 +71,7 @@ export default function CategoryPage() {
                   <CardWrapper
                     key={item.prodId}
                     {...(item.isAvailable && {
-                      to: `/product/${item.prodId}`,
+                      to: `/product/ society_projects society_projects${item.prodId}`,
                     })}
                     className="block group outline-none h-full"
                   >
